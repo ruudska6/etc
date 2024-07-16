@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바른 자세 서비스</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .webcam-section {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            background: #ffffff;
+            padding: 2rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .webcam-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        button {
+            margin-top: 1rem;
+            padding: 0.5rem 2rem;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        footer {
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            color: #888;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>바른 자세 서비스</h1>
+    </header>
+
+    <main>
+        <section class="webcam-section">
+            <h2>웹캠 화면</h2>
+            <div class="webcam-container">
+                <video id="webcam" autoplay playsinline></video>
+            </div>
+            <button id="capture-btn">캡처</button>
+            <canvas id="canvas"></canvas>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2024 바른 자세 서비스. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const video = document.getElementById('webcam');
+            const captureButton = document.getElementById('capture-btn');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                        video.play();
+                    })
+                    .catch(function(error) {
+                        console.error("Error accessing webcam: ", error);
+                    });
+            }
+
+            captureButton.addEventListener('click', function() {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/png');
+                console.log("캡처 완료:", dataUrl);
+            });
+        });
+    </script>
+</body>
+</html>
