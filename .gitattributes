@@ -1,0 +1,9 @@
+# Handle line endings for text files
+* text=auto
+
+# Specific file types
+*.c text
+*.h text
+
+# Handle line endings for specific directories
+venv/Lib/site-packages/* text eol=lf
