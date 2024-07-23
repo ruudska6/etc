@@ -98,46 +98,119 @@
     </header>
 
     <main>
-        <section class="webcam-section">
-            <h2>웹캠 화면</h2>
-            <div class="webcam-container">
-                <video id="webcam" autoplay playsinline></video>
-            </div>
-            <button id="capture-btn">캡처</button>
-            <canvas id="canvas"></canvas>
-        </section>
+        <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    
     </main>
 
     <footer>
         <p>© 2024 바른 자세 서비스. All rights reserved.</p>
     </footer>
-
     <script>
+
         document.addEventListener("DOMContentLoaded", function() {
-            const video = document.getElementById('webcam');
-            const captureButton = document.getElementById('capture-btn');
-            const canvas = document.getElementById('canvas');
-            const context = canvas.getContext('2d');
 
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) {
-                        video.srcObject = stream;
-                        video.play();
-                    })
-                    .catch(function(error) {
-                        console.error("Error accessing webcam: ", error);
-                    });
-            }
+        const video = document.getElementById('video');
 
-            captureButton.addEventListener('click', function() {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL('image/png');
-                console.log("캡처 완료:", dataUrl);
-            });
+        if (video) {
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                return video.play();
+        })
+            .then(() =>{
+                console.log("Video playback started");
+            })
+        .catch(err => {
+            console.error("Error accessing webcam: " + err);
         });
+        } 
+        else {
+            console.error("Video element not found");
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(err => {
+                console.error("Error accessing webcam: " + err);
+            });
+
+        // Make sure the WebSocket URL is correct
+        
+        const socket = new WebSocket(`ws://${window.location.host}/ws/posture/`);
+
+        socket.onopen = function(e) {
+           console.log("WebSocket connection established");
+        };
+
+        socket.onclose = function(e) {
+            console.log("WebSocket connection closed", e);
+        };
+
+        socket.onerror = function(e) {
+            console.error("WebSocket error observed", e);
+        };
+        
+        socket.onmessage = function(e) {
+    try {
+        const data = JSON.parse(e.data);
+        const keypoints = data.keypoints;
+        const posture = data.posture;
+        
+        if (!Array.isArray(keypoints)) {
+            console.error('Keypoints is not an array:', keypoints);
+            return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        for (const kp of keypoints) {
+            if (kp && kp.length === 3) {
+                const [y, x, confidence] = kp;
+                if (confidence > 0.3) {
+                    ctx.beginPath();
+                    ctx.arc(x * canvas.width, y * canvas.height, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'green';
+                    ctx.fill();
+                }
+            }
+        }
+
+        if (posture === "자세를 고쳐 앉으세요") {
+            alert("자세를 고쳐 앉으세요");
+        }
+    } catch (error) {
+        console.error('Error processing message:', error);
+    }
+};
+
+
+function sendFrame() {
+    if (socket.readyState === WebSocket.OPEN) {
+        //웹소켓이 열려있을떄만으로 한정
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const frame = new Uint8Array(imageData.data.buffer);
+        const shape = [canvas.height, canvas.width, 4];
+        socket.send(JSON.stringify({
+            'frame': Array.from(frame),
+            'shape': shape
+        }));
+    }
+}
+
+
+        setInterval(sendFrame, 2000);
+           
+        });
+
     </script>
 </body>
 </html>
